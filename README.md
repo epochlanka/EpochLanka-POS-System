@@ -1,63 +1,36 @@
-# EpochLanka POS System
-
-A multi-branch, offline-first Point of Sale (POS) system. Each branch keeps trading independently on a local database even when the internet is down, then securely syncs to a centralized cloud database once back online.
-
-## Description
-
-EpochLanka POS is built for retail businesses with multiple branches that can't afford downtime when the internet drops. Every branch runs its own local POS server with a local SQLite database, so counters and receipt printers keep working offline. A sync worker pushes and pulls changes over HTTPS to a centralized PostgreSQL server whenever a connection is available, giving head office real-time, consolidated visibility across all branches once synced.
-
-## Tech Stack
-
-| Layer              | Technology                          |
-|--------------------|--------------------------------------|
-| Frontend           | React / Next.js                      |
-| Styling            | Tailwind CSS                         |
-| Offline Database   | SQLite (per-branch, local)           |
-| Online Database    | PostgreSQL (centralized cloud)       |
-| ORM                | Prisma (separate schemas for SQLite and Postgres) |
-
-## Architecture
-
-- **Local branch (offline-first)**: Store Wi-Fi router → Main POS server (local SQLite + sync worker) → counters + receipt printer.
-- **Sync**: Secure HTTPS sync from each branch's sync worker to the centralized cloud server, whenever online.
-- **Cloud**: Centralized server backed by PostgreSQL, aggregating data from all branches.
-
-## Project Structure
-
-```
-epochlanka-pos-system/
-├── apps/
-│   ├── pos-client/        # Next.js frontend (runs at each branch counter)
-│   └── cloud-dashboard/   # Next.js frontend for head office / multi-branch view
-├── packages/
-│   ├── db-local/          # Prisma schema + client for SQLite (per branch)
-│   ├── db-cloud/          # Prisma schema + client for PostgreSQL (cloud)
-│   └── sync-worker/       # Sync engine: push/pull, retry queue, conflict resolution
-├── docs/
-│   └── architecture/      # Diagrams and SDLC/delivery plan
-├── .gitignore
-└── README.md
-```
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
+First, run the development server:
+
 ```bash
-# clone
-git clone <your-remote-url> epochlanka-pos-system
-cd epochlanka-pos-system
-
-# install dependencies (once package.json files are added)
-npm install
-
-# generate Prisma clients
-npx prisma generate --schema packages/db-local/schema.prisma
-npx prisma generate --schema packages/db-cloud/schema.prisma
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## Development Approach
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-This project follows an incremental delivery plan (not a strict Waterfall process) due to the complexity of the offline sync layer and multi-branch hardware integration. See `docs/architecture/` for the full SDLC and delivery schedule.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## License
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-TBD
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
