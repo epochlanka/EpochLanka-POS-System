@@ -1,11 +1,51 @@
 generator client {
-provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-provider = "postgresql"
-url      = env("DATABASE_URL_CLOUD")
+  provider = "postgresql"
 }
 
-// NOTE: Models here will mirror schema.sqlite.prisma exactly.
-// We keep them separate to allow Prisma to handle DB-specific migrations smoothly.
+// --- Phase 1 Core Models ---
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  roleId       String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+model Product {
+  id          String     @id @default(cuid())
+  name        String
+  sku         String     @unique
+  barcode     String?    @unique
+  costPrice   Decimal
+  sellPrice   Decimal
+  taxRate     Float      @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+}
+
+model Stock {
+  id          String     @id @default(cuid())
+  productId   String
+  warehouseId String
+  quantity    Int        @default(0)
+  updatedAt   DateTime   @updatedAt
+}
+
+model Sale {
+  id            String     @id @default(cuid())
+  invoiceNumber String     @unique
+  cashierId     String
+  subtotal      Decimal
+  discount      Decimal    @default(0)
+  tax           Decimal    @default(0)
+  total         Decimal
+  status        String     @default("completed")
+  createdAt     DateTime   @default(now())
+}
