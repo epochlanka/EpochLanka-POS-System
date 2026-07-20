@@ -7,17 +7,28 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   passwordHash String
-  role         Role     @relation(fields: [roleId], references: [id])
+  role         Role      @relation(fields: [roleId], references: [id])
   roleId       String
   branchId     String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
   sales        Sale[]
   auditLogs    AuditLog[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Role {

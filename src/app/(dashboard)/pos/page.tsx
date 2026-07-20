@@ -1,6 +1,11 @@
+"use client";
+
 import React from "react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function PosPage() {
+  const { user, logout, isLoggingOut } = useAuth();
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       <header className="bg-zinc-900 border-b border-zinc-800 py-4 px-6 flex justify-between items-center">
@@ -9,9 +14,17 @@ export default function PosPage() {
           <span className="text-zinc-400 text-sm">Shift #001</span>
         </div>
         <div className="flex items-center gap-4 text-sm text-zinc-400">
-          <span>Cashier: Admin User</span>
+          <span>Cashier: {user.name}</span>
           <span className="h-4 w-px bg-zinc-800"></span>
           <span>Status: Offline Cache Ready</span>
+          <span className="h-4 w-px bg-zinc-800"></span>
+          <button
+            onClick={logout}
+            disabled={isLoggingOut}
+            className="text-zinc-400 hover:text-white disabled:opacity-50"
+          >
+            {isLoggingOut ? "Signing out..." : "Logout"}
+          </button>
         </div>
       </header>
 

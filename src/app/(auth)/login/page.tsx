@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -14,11 +17,25 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Auth logic will be implemented here
-      console.log("Logging in with:", { email, password });
-      // Temporary simulated delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setError("Authentication service functions are ready to be integrated.");
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "Unable to sign in. Please try again.");
+        return;
+      }
+
+      // Send the user back wherever they were headed (middleware sets
+      // ?from=/pos etc. when it bounces an unauthenticated request),
+      // defaulting to the dashboard.
+      const redirectTo = searchParams.get("from") || "/dashboard";
+      router.replace(redirectTo);
+      router.refresh();
     } catch (err: any) {
       setError(err?.message || "An error occurred during sign in");
     } finally {
@@ -115,5 +132,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

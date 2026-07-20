@@ -1,6 +1,11 @@
+"use client";
+
 import React from "react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function DashboardPage() {
+  const { user, logout, isLoggingOut } = useAuth();
+
   return (
     <div className="min-h-screen bg-zinc-950 p-8 text-white">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -9,8 +14,20 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
             <p className="text-zinc-400 mt-1">Real-time metrics and sales performance summary</p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-lg text-sm text-zinc-400">
-            Terminal Status: <span className="text-green-500 font-semibold">Online</span>
+          <div className="flex items-center gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-lg text-sm text-zinc-400">
+              Terminal Status: <span className="text-green-500 font-semibold">Online</span>
+            </div>
+            <div className="text-sm text-zinc-400 text-right">
+              <div className="text-white font-medium">{user.name}</div>
+              <button
+                onClick={logout}
+                disabled={isLoggingOut}
+                className="text-zinc-400 hover:text-white disabled:opacity-50"
+              >
+                {isLoggingOut ? "Signing out..." : "Logout"}
+              </button>
+            </div>
           </div>
         </header>
 

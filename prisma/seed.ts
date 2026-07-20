@@ -80,7 +80,7 @@ async function main() {
     create: {
       name: "Default Admin",
       email: "admin@epochlanka.com",
-      passwordHash: "$2a$10$n8H0T298i3.d1gP/r1R9/uNlTz6o1C4RlyQx34eUe.tH7B0D/sF/K", // bcrypt hash for 'admin123'
+      passwordHash: "$2b$10$WjKkK/AmvD4zZV0HvXL3iOylbBWHbgsQZ.t7Vr9zSxJ2MJFIWHHZ2", // verified bcrypt hash for 'admin123'
       roleId: ownerRole.id,
       isActive: true,
     },
