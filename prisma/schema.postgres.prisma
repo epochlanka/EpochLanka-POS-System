@@ -6,16 +6,55 @@ datasource db {
   provider = "postgresql"
 }
 
-// --- Phase 1 Core Models ---
-
 model User {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   passwordHash String
+  role         Role      @relation(fields: [roleId], references: [id])
   roleId       String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  branchId     String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sales        Sale[]
+  auditLogs    AuditLog[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Role {
+  id          String @id @default(cuid())
+  name        String @unique   // Owner, Manager, Cashier, Staff
+  permissions Json             // e.g. { "products.create": true, "reports.view": true }
+  users       User[]
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  products Product[]
+}
+
+model Brand {
+  id       String    @id @default(cuid())
+  name     String
+  products Product[]
 }
 
 model Product {
@@ -23,10 +62,18 @@ model Product {
   name        String
   sku         String     @unique
   barcode     String?    @unique
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  brandId     String?
+  brand       Brand?     @relation(fields: [brandId], references: [id])
   costPrice   Decimal
   sellPrice   Decimal
   taxRate     Float      @default(0)
+  imageUrl    String?
   isActive    Boolean    @default(true)
+  variants    ProductVariant[]
+  stocks      Stock[]
+  saleItems   SaleItem[]
   createdAt   DateTime   @default(now())
 }
 
@@ -238,6 +285,14 @@ model PriceListItem {
   price       Decimal
 
   @@unique([priceListId, productId])
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  size      String?
+  color     String?
+  weight    String?
+  sku       String  @unique
 }
 
 model Warehouse {
@@ -251,19 +306,95 @@ model Warehouse {
 model Stock {
   id          String     @id @default(cuid())
   productId   String
+  product     Product    @relation(fields: [productId], references: [id])
   warehouseId String
+  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id])
   quantity    Int        @default(0)
+  batchNumber String?
+  expiryDate  DateTime?
   updatedAt   DateTime   @updatedAt
+}
+
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  email          String?
+  birthday       DateTime?
+  loyaltyPoints  Int      @default(0)
+  creditBalance  Decimal  @default(0)
+  membershipTier String?  // e.g. Silver, Gold
+  sales          Sale[]
+  createdAt      DateTime @default(now())
+}
+
+model Supplier {
+  id                 String    @id @default(cuid())
+  name               String
+  phone              String?
+  outstandingBalance Decimal   @default(0)
+  purchaseOrders     PurchaseOrder[]
+}
+
+model PurchaseOrder {
+  id          String    @id @default(cuid())
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  status      String    @default("pending") // pending, received, cancelled
+  totalAmount Decimal
+  createdAt   DateTime  @default(now())
 }
 
 model Sale {
   id            String     @id @default(cuid())
   invoiceNumber String     @unique
   cashierId     String
+  cashier       User       @relation(fields: [cashierId], references: [id])
+  customerId    String?
+  customer      Customer?  @relation(fields: [customerId], references: [id])
   subtotal      Decimal
   discount      Decimal    @default(0)
   tax           Decimal    @default(0)
   total         Decimal
-  status        String     @default("completed")
+  status        String     @default("completed") // held, completed, returned
+  items         SaleItem[]
+  payments      Payment[]
   createdAt     DateTime   @default(now())
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal
+  discount  Decimal @default(0)
+}
+
+model Payment {
+  id     String  @id @default(cuid())
+  saleId String
+  sale   Sale    @relation(fields: [saleId], references: [id])
+  method String  // cash, card, qr, wallet, bank_transfer
+  amount Decimal
+}
+
+model Expense {
+  id       String   @id @default(cuid())
+  category String   // salary, utility, other
+  amount   Decimal
+  note     String?
+  date     DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  createdAt DateTime @default(now())
 }

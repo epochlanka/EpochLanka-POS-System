@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/session";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/pos", "/products", "/categories", "/attributes"];
+const PROTECTED_PREFIXES = ["/dashboard", "/pos"];
 
 /**
  * This proxy only does a cheap, cookie-presence check. It runs on the

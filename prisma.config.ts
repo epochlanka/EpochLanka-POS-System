@@ -10,4 +10,7 @@ export default defineConfig({
       ? (process.env.DATABASE_URL_CLOUD || "") 
       : (process.env.DATABASE_URL_LOCAL || "file:./dev.db"),
   },
+  migrations: {
+    seed: "npx tsx prisma/seed.ts",
+  },
 });
