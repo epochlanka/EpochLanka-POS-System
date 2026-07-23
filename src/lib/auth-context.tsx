@@ -15,12 +15,14 @@ export interface AuthUser {
   roleId: string;
   branchId: string | null;
   isActive: boolean;
+  permissions: Record<string, boolean>;
 }
 
 interface AuthContextValue {
   user: AuthUser;
   isLoggingOut: boolean;
   logout: () => Promise<void>;
+  can: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,8 +47,10 @@ export function AuthProvider({
     }
   }, [router]);
 
+  const can = useCallback((permission: string) => user.permissions?.[permission] === true, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoggingOut, logout }}>
+    <AuthContext.Provider value={{ user, isLoggingOut, logout, can }}>
       {children}
     </AuthContext.Provider>
   );

@@ -39,6 +39,196 @@ model Role {
 }
 
 model Branch {
+  id         String      @id @default(cuid())
+  name       String
+  address    String?
+  createdAt  DateTime    @default(now())
+  warehouses Warehouse[]
+}
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  subCategories SubCategory[]
+  products      Product[]
+}
+
+model SubCategory {
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  products   Product[]
+
+  @@unique([categoryId, name])
+}
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+/// Unit of Measure, e.g. Piece, Kilogram, Box. `factorToBase` lets a product's
+/// stock always be stored in one canonical base unit while still letting
+/// staff sell/receive in a different unit (see UnitConversion for cross-unit
+/// pairs that aren't a simple shared-base ratio).
+model Unit {
+  id                  String           @id @default(cuid())
+  name                String           @unique // "Piece", "Kilogram", "Box"
+  symbol              String // "pc", "kg", "box"
+  createdAt           DateTime         @default(now())
+  products            Product[]
+  recipeItems         RecipeItem[]
+  conversionsFrom      UnitConversion[] @relation("FromUnit")
+  conversionsTo        UnitConversion[] @relation("ToUnit")
+}
+
+/// 1 fromUnit = factor * toUnit, e.g. 1 Box -> 12 Piece means factor = 12.
+model UnitConversion {
+  id         String @id @default(cuid())
+  fromUnitId String
+  fromUnit   Unit   @relation("FromUnit", fields: [fromUnitId], references: [id])
+  toUnitId   String
+  toUnit     Unit   @relation("ToUnit", fields: [toUnitId], references: [id])
+  factor     Float
+
+  @@unique([fromUnitId, toUnitId])
+}
+
+/// A characteristic used to define variants, e.g. Size, Color, Flavor.
+model Attribute {
+  id     String           @id @default(cuid())
+  name   String           @unique
+  values AttributeValue[]
+}
+
+model AttributeValue {
+  id          String                     @id @default(cuid())
+  attributeId String
+  attribute   Attribute                  @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String
+  variants    ProductVariantAttribute[]
+
+  @@unique([attributeId, value])
+}
+
+model Product {
+  id            String        @id @default(cuid())
+  name          String
+  sku           String        @unique
+  barcode       String?       @unique
+  categoryId    String?
+  category      Category?     @relation(fields: [categoryId], references: [id])
+  subCategoryId String?
+  subCategory   SubCategory?  @relation(fields: [subCategoryId], references: [id])
+  brandId       String?
+  brand         Brand?        @relation(fields: [brandId], references: [id])
+  baseUnitId    String?
+  baseUnit      Unit?         @relation(fields: [baseUnitId], references: [id])
+  costPrice     Decimal
+  sellPrice     Decimal
+  taxRate       Float         @default(0)
+  imageUrl      String?
+  isActive      Boolean       @default(true)
+  isCombo       Boolean       @default(false)
+  updatedAt     DateTime      @updatedAt
+  variants      ProductVariant[]
+  stocks        Stock[]
+  saleItems     SaleItem[]
+  priceListItems PriceListItem[]
+  comboItems    ComboItem[]   @relation("ComboParent")
+  comboOf       ComboItem[]   @relation("ComboChild")
+  recipeItems   RecipeItem[]  @relation("RecipeFinished")
+  usedInRecipes RecipeItem[]  @relation("RecipeIngredient")
+  createdAt     DateTime      @default(now())
+}
+
+model ProductVariant {
+  id                String                     @id @default(cuid())
+  productId         String
+  product           Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku               String                     @unique
+  barcode           String?                    @unique
+  sellPriceOverride Decimal?
+  isActive          Boolean                    @default(true)
+  // Legacy free-text fields, kept for backward compatibility with existing
+  // data; new variants should use `attributes` (ProductVariantAttribute) instead.
+  size              String?
+  color             String?
+  weight            String?
+  attributes        ProductVariantAttribute[]
+}
+
+model ProductVariantAttribute {
+  id               String         @id @default(cuid())
+  variantId        String
+  variant          ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  attributeValueId String
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id])
+
+  @@unique([variantId, attributeValueId])
+}
+
+/// Bundle/combo products: `parentProduct` is the sellable combo, `childProduct`
+/// is a component included in it (with a quantity per bundle).
+model ComboItem {
+  id              String  @id @default(cuid())
+  parentProductId String
+  parentProduct   Product @relation("ComboParent", fields: [parentProductId], references: [id], onDelete: Cascade)
+  childProductId  String
+  childProduct    Product @relation("ComboChild", fields: [childProductId], references: [id])
+  quantity        Float   @default(1)
+}
+
+/// Bill of materials: `finishedProduct` is made from `ingredientProduct` in
+/// the given quantity/unit (e.g. a "Burger" recipe consumes 0.15 kg of "Beef Patty").
+model RecipeItem {
+  id                  String  @id @default(cuid())
+  finishedProductId   String
+  finishedProduct     Product @relation("RecipeFinished", fields: [finishedProductId], references: [id], onDelete: Cascade)
+  ingredientProductId String
+  ingredientProduct   Product @relation("RecipeIngredient", fields: [ingredientProductId], references: [id])
+  quantity            Float
+  unitId              String?
+  unit                Unit?   @relation(fields: [unitId], references: [id])
+}
+
+/// A named price list (Retail/Wholesale/VIP/branch-specific) with per-product overrides.
+model PriceList {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  type      String          @default("retail") // retail, wholesale, vip, custom
+  branchId  String?
+  isDefault Boolean         @default(false)
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  items     PriceListItem[]
+}
+
+model PriceListItem {
+  id          String    @id @default(cuid())
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  price       Decimal
+
+  @@unique([priceListId, productId])
+}
+
+model Warehouse {
+  id       String  @id @default(cuid())
+  name     String
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+  stocks   Stock[]
   id        String   @id @default(cuid())
   name      String
   address   String?

@@ -1,5 +1,6 @@
 import { prisma } from "../src/lib/prisma";
 
+
 async function main() {
   console.log("Seeding started...");
 
@@ -87,6 +88,52 @@ async function main() {
   });
 
   console.log(`Default admin user created: ${defaultAdmin.email}`);
+
+  // 3. Create default Branches + Warehouses (multi-branch stock needs at least one of each)
+  const branchSeeds = [
+    { name: "Main Branch", address: "Kandy, Sri Lanka", warehouseName: "Main Warehouse" },
+    { name: "Colombo Branch", address: "Colombo, Sri Lanka", warehouseName: "Colombo Warehouse" },
+  ];
+
+  for (const b of branchSeeds) {
+    let branch = await prisma.branch.findFirst({ where: { name: b.name } });
+    if (!branch) {
+      branch = await prisma.branch.create({ data: { name: b.name, address: b.address } });
+    }
+    const existingWarehouse = await prisma.warehouse.findFirst({ where: { branchId: branch.id } });
+    if (!existingWarehouse) {
+      await prisma.warehouse.create({ data: { name: b.warehouseName, branchId: branch.id } });
+    }
+    console.log(`Branch "${b.name}" with warehouse ready.`);
+  }
+
+  // 4. Create default Units of Measure + one conversion pair
+  const unitSeeds = [
+    { name: "Piece", symbol: "pc" },
+    { name: "Kilogram", symbol: "kg" },
+    { name: "Box", symbol: "box" },
+  ];
+  const createdUnits: Record<string, { id: string }> = {};
+  for (const u of unitSeeds) {
+    const unit = await prisma.unit.upsert({
+      where: { name: u.name },
+      update: { symbol: u.symbol },
+      create: u,
+    });
+    createdUnits[u.name] = unit;
+  }
+  const box = createdUnits["Box"];
+  const piece = createdUnits["Piece"];
+  const existingConversion = await prisma.unitConversion.findUnique({
+    where: { fromUnitId_toUnitId: { fromUnitId: box.id, toUnitId: piece.id } },
+  });
+  if (!existingConversion) {
+    await prisma.unitConversion.create({
+      data: { fromUnitId: box.id, toUnitId: piece.id, factor: 12 }, // 1 Box = 12 Piece
+    });
+  }
+  console.log("Default units of measure ready.");
+
   console.log("Seeding completed successfully.");
 }
 
@@ -97,4 +144,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+  });
   });

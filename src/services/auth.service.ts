@@ -161,6 +161,20 @@ export const authService = {
   },
 
   /**
+   * Returns the full permission map for a user's role (e.g. for populating
+   * client-side UI gating without a round trip per permission).
+   */
+  async getPermissions(userId: string): Promise<Record<string, boolean>> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+
+    if (!user || !user.isActive) return {};
+    return (user.role.permissions as Record<string, boolean>) ?? {};
+  },
+
+  /**
    * Changes the user's password after validating their old password.
    * Also revokes every other active session for the user, so a
    * compromised session can't outlive a password change.

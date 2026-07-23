@@ -17,6 +17,8 @@ export default async function DashboardGroupLayout({
     redirect("/login");
   }
 
+  const permissions = await authService.getPermissions(user.id);
+
   return (
     <AuthProvider
       user={{
@@ -26,6 +28,7 @@ export default async function DashboardGroupLayout({
         roleId: user.roleId,
         branchId: user.branchId,
         isActive: user.isActive,
+        permissions,
       }}
     >
       {children}
