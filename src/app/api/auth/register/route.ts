@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { cookies } from "next/headers";
+import { requirePermission } from "@/lib/api-auth";
 import { authService, AuthError } from "@/services/auth.service";
-import { SESSION_COOKIE_NAME } from "@/lib/session";
 
 const registerSchema = z.object({
   email: z.preprocess(
     (val) => (typeof val === "string" ? val.trim() : val),
-    z.email("Enter a valid email address.")
+    z.string().email("Enter a valid email address.")
   ),
   name: z.string().trim().min(1, "Name is required."),
   password: z.string().min(8, "Password must be at least 8 characters."),
@@ -18,25 +17,11 @@ const registerSchema = z.object({
 /**
  * Creating accounts is an admin action, not a public sign-up flow — this
  * POS has a fixed set of staff, provisioned by an Owner/Manager, not
- * self-service registration. Gate it behind the caller's own session and
- * the "admin.access" permission on their role.
+ * self-service registration. Gated behind the "admin.access" permission.
  */
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  const currentUser = sessionId ? await authService.getCurrentUser(sessionId) : null;
-
-  if (!currentUser) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
-  }
-
-  const canCreateUsers = await authService.hasPermission(currentUser.id, "admin.access");
-  if (!canCreateUsers) {
-    return NextResponse.json(
-      { error: "You do not have permission to create accounts." },
-      { status: 403 }
-    );
-  }
+  const auth = await requirePermission("admin.access");
+  if (auth instanceof NextResponse) return auth;
 
   let body: unknown;
   try {
@@ -53,6 +38,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const newUser = await authService.registerUser(parsed.data);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...safeUser } = newUser;
     return NextResponse.json({ user: safeUser }, { status: 201 });
   } catch (err) {
