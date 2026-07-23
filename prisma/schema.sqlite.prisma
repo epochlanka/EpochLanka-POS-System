@@ -6,16 +6,18 @@ datasource db {
   provider = "sqlite"
 }
 
+// --- Phase 1 Core Models ---
+
 model User {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
-  email        String    @unique
+  email        String     @unique
   passwordHash String
-  role         Role      @relation(fields: [roleId], references: [id])
   roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
   branchId     String?
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
   sales        Sale[]
   auditLogs    AuditLog[]
   sessions     Session[]
@@ -31,10 +33,24 @@ model Session {
   @@index([userId])
 }
 
+/// Lightweight audit trail (who did what, when).
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
 model Role {
   id          String @id @default(cuid())
-  name        String @unique   // Owner, Manager, Cashier, Staff
-  permissions Json             // e.g. { "products.create": true, "reports.view": true }
+  name        String @unique // Owner, Manager, Cashier, Staff
+  permissions Json // e.g. { "products.create": true, "reports.view": true }
   users       User[]
 }
 
@@ -80,14 +96,14 @@ model Brand {
 /// staff sell/receive in a different unit (see UnitConversion for cross-unit
 /// pairs that aren't a simple shared-base ratio).
 model Unit {
-  id                  String           @id @default(cuid())
-  name                String           @unique // "Piece", "Kilogram", "Box"
-  symbol              String // "pc", "kg", "box"
-  createdAt           DateTime         @default(now())
-  products            Product[]
-  recipeItems         RecipeItem[]
-  conversionsFrom      UnitConversion[] @relation("FromUnit")
-  conversionsTo        UnitConversion[] @relation("ToUnit")
+  id              String           @id @default(cuid())
+  name            String           @unique // "Piece", "Kilogram", "Box"
+  symbol          String // "pc", "kg", "box"
+  createdAt       DateTime         @default(now())
+  products        Product[]
+  recipeItems     RecipeItem[]
+  conversionsFrom UnitConversion[] @relation("FromUnit")
+  conversionsTo   UnitConversion[] @relation("ToUnit")
 }
 
 /// 1 fromUnit = factor * toUnit, e.g. 1 Box -> 12 Piece means factor = 12.
@@ -110,9 +126,9 @@ model Attribute {
 }
 
 model AttributeValue {
-  id          String                     @id @default(cuid())
+  id          String                    @id @default(cuid())
   attributeId String
-  attribute   Attribute                  @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  attribute   Attribute                 @relation(fields: [attributeId], references: [id], onDelete: Cascade)
   value       String
   variants    ProductVariantAttribute[]
 
@@ -120,44 +136,48 @@ model AttributeValue {
 }
 
 model Product {
-  id            String        @id @default(cuid())
-  name          String
-  sku           String        @unique
-  barcode       String?       @unique
-  categoryId    String?
-  category      Category?     @relation(fields: [categoryId], references: [id])
-  subCategoryId String?
-  subCategory   SubCategory?  @relation(fields: [subCategoryId], references: [id])
-  brandId       String?
-  brand         Brand?        @relation(fields: [brandId], references: [id])
-  baseUnitId    String?
-  baseUnit      Unit?         @relation(fields: [baseUnitId], references: [id])
-  costPrice     Decimal
-  sellPrice     Decimal
-  taxRate       Float         @default(0)
-  imageUrl      String?
-  isActive      Boolean       @default(true)
-  isCombo       Boolean       @default(false)
-  updatedAt     DateTime      @updatedAt
-  variants      ProductVariant[]
-  stocks        Stock[]
-  saleItems     SaleItem[]
+  id             String           @id @default(cuid())
+  name           String
+  sku            String           @unique
+  barcode        String?          @unique
+  categoryId     String?
+  category       Category?        @relation(fields: [categoryId], references: [id])
+  subCategoryId  String?
+  subCategory    SubCategory?     @relation(fields: [subCategoryId], references: [id])
+  brandId        String?
+  brand          Brand?           @relation(fields: [brandId], references: [id])
+  baseUnitId     String?
+  baseUnit       Unit?            @relation(fields: [baseUnitId], references: [id])
+  costPrice      Decimal
+  sellPrice      Decimal
+  taxRate        Float            @default(0)
+  /// Reorder / low-stock threshold, summed across warehouses. 0 = not tracked.
+  reorderLevel   Int              @default(0)
+  imageUrl       String?
+  isActive       Boolean          @default(true)
+  isCombo        Boolean          @default(false)
+  updatedAt      DateTime         @updatedAt
+  variants       ProductVariant[]
+  stocks         Stock[]
+  saleItems      SaleItem[]
   priceListItems PriceListItem[]
-  comboItems    ComboItem[]   @relation("ComboParent")
-  comboOf       ComboItem[]   @relation("ComboChild")
-  recipeItems   RecipeItem[]  @relation("RecipeFinished")
-  usedInRecipes RecipeItem[]  @relation("RecipeIngredient")
-  createdAt     DateTime      @default(now())
+  comboItems     ComboItem[]      @relation("ComboParent")
+  comboOf        ComboItem[]      @relation("ComboChild")
+  recipeItems    RecipeItem[]     @relation("RecipeFinished")
+  usedInRecipes  RecipeItem[]     @relation("RecipeIngredient")
+  createdAt      DateTime         @default(now())
+
+  @@index([reorderLevel])
 }
 
 model ProductVariant {
-  id                String                     @id @default(cuid())
+  id                String                    @id @default(cuid())
   productId         String
-  product           Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  sku               String                     @unique
-  barcode           String?                    @unique
+  product           Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku               String                    @unique
+  barcode           String?                   @unique
   sellPriceOverride Decimal?
-  isActive          Boolean                    @default(true)
+  isActive          Boolean                   @default(true)
   // Legacy free-text fields, kept for backward compatibility with existing
   // data; new variants should use `attributes` (ProductVariantAttribute) instead.
   size              String?
@@ -224,106 +244,59 @@ model PriceListItem {
 }
 
 model Warehouse {
-  id       String  @id @default(cuid())
-  name     String
-  branchId String?
-  branch   Branch? @relation(fields: [branchId], references: [id])
-  stocks   Stock[]
   id        String   @id @default(cuid())
   name      String
   address   String?
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
   createdAt DateTime @default(now())
-}
-
-model Category {
-  id       String    @id @default(cuid())
-  name     String
-  products Product[]
-}
-
-model Brand {
-  id       String    @id @default(cuid())
-  name     String
-  products Product[]
-}
-
-model Product {
-  id          String     @id @default(cuid())
-  name        String
-  sku         String     @unique
-  barcode     String?    @unique
-  categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id])
-  brandId     String?
-  brand       Brand?     @relation(fields: [brandId], references: [id])
-  costPrice   Decimal
-  sellPrice   Decimal
-  taxRate     Float      @default(0)
-  imageUrl    String?
-  isActive    Boolean    @default(true)
-  variants    ProductVariant[]
-  stocks      Stock[]
-  saleItems   SaleItem[]
-  createdAt   DateTime   @default(now())
-}
-
-model ProductVariant {
-  id        String  @id @default(cuid())
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  size      String?
-  color     String?
-  weight    String?
-  sku       String  @unique
-}
-
-model Warehouse {
-  id       String  @id @default(cuid())
-  name     String
-  branchId String?
-  stocks   Stock[]
+  stocks    Stock[]
 }
 
 model Stock {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   productId   String
-  product     Product    @relation(fields: [productId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   warehouseId String
-  warehouse   Warehouse  @relation(fields: [warehouseId], references: [id])
-  quantity    Int        @default(0)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  /// Null for un-batched stock; set when a product is received in a tracked batch/lot.
   batchNumber String?
   expiryDate  DateTime?
-  updatedAt   DateTime   @updatedAt
+  quantity    Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([warehouseId])
 }
 
 model Customer {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   name           String
   phone          String?
   email          String?
   birthday       DateTime?
-  loyaltyPoints  Int      @default(0)
-  creditBalance  Decimal  @default(0)
-  membershipTier String?  // e.g. Silver, Gold
+  loyaltyPoints  Int       @default(0)
+  creditBalance  Decimal   @default(0)
+  membershipTier String? // e.g. Silver, Gold
   sales          Sale[]
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
 }
 
 model Supplier {
-  id                 String    @id @default(cuid())
+  id                 String          @id @default(cuid())
   name               String
   phone              String?
-  outstandingBalance Decimal   @default(0)
+  outstandingBalance Decimal         @default(0)
   purchaseOrders     PurchaseOrder[]
 }
 
 model PurchaseOrder {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   supplierId  String
-  supplier    Supplier  @relation(fields: [supplierId], references: [id])
-  status      String    @default("pending") // pending, received, cancelled
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  status      String   @default("pending") // pending, received, cancelled
   totalAmount Decimal
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model Sale {
@@ -333,49 +306,48 @@ model Sale {
   cashier       User       @relation(fields: [cashierId], references: [id])
   customerId    String?
   customer      Customer?  @relation(fields: [customerId], references: [id])
+  branchId      String?
   subtotal      Decimal
   discount      Decimal    @default(0)
   tax           Decimal    @default(0)
   total         Decimal
-  status        String     @default("completed") // held, completed, returned
+  /// completed | pending | held | voided
+  status        String     @default("completed")
+  createdAt     DateTime   @default(now())
   items         SaleItem[]
   payments      Payment[]
-  createdAt     DateTime   @default(now())
+
+  @@index([status])
+  @@index([createdAt])
 }
 
 model SaleItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   saleId    String
-  sale      Sale    @relation(fields: [saleId], references: [id])
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Float
   unitPrice Decimal
-  discount  Decimal @default(0)
+  discount  Decimal  @default(0)
+  total     Decimal
+
+  @@index([saleId])
+  @@index([productId])
 }
 
 model Payment {
   id     String  @id @default(cuid())
   saleId String
-  sale   Sale    @relation(fields: [saleId], references: [id])
-  method String  // cash, card, qr, wallet, bank_transfer
+  sale   Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  method String // cash, card, qr, wallet, bank_transfer
   amount Decimal
 }
 
 model Expense {
   id       String   @id @default(cuid())
-  category String   // salary, utility, other
+  category String // salary, utility, other
   amount   Decimal
   note     String?
   date     DateTime @default(now())
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  action    String
-  entity    String
-  entityId  String
-  createdAt DateTime @default(now())
 }

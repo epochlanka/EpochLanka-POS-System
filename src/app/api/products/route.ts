@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const product = await productService.create(parsed.data);
+    const product = await productService.create(parsed.data, auth.user.id);
     return NextResponse.json({ product: serializeDecimals(product) }, { status: 201 });
   } catch (err) {
     if (err instanceof ProductError) {

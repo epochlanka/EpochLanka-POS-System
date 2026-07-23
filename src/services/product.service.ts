@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { auditService, diffFields } from "@/services/audit.service";
 
 export class ProductError extends Error {
   constructor(message: string) {
@@ -126,7 +127,7 @@ export const productService = {
     });
   },
 
-  async create(data: ProductInput) {
+  async create(data: ProductInput, actorUserId?: string) {
     const existingSku = await prisma.product.findUnique({ where: { sku: data.sku } });
     if (existingSku) {
       throw new ProductError("A product with this SKU already exists.");
@@ -139,7 +140,7 @@ export const productService = {
     }
     await assertCategoryHierarchy(data.categoryId, data.subCategoryId);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           name: data.name,
@@ -164,9 +165,17 @@ export const productService = {
 
       return tx.product.findUniqueOrThrow({ where: { id: product.id }, include: PRODUCT_INCLUDE });
     });
+
+    if (actorUserId) {
+      await auditService
+        .log(actorUserId, "create", "Product", result.id, { name: result.name, sku: result.sku })
+        .catch((err) => console.error("Failed to write audit log:", err));
+    }
+
+    return result;
   },
 
-  async update(id: string, data: Partial<ProductInput>) {
+  async update(id: string, data: Partial<ProductInput>, actorUserId?: string) {
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new ProductError("Product not found.");
@@ -190,7 +199,10 @@ export const productService = {
       data.subCategoryId !== undefined ? data.subCategoryId : product.subCategoryId
     );
 
-    return prisma.$transaction(async (tx) => {
+    const { stocks, ...fieldChanges } = data;
+    const changes = diffFields(product, fieldChanges);
+
+    const result = await prisma.$transaction(async (tx) => {
       await tx.product.update({
         where: { id },
         data: {
@@ -216,18 +228,38 @@ export const productService = {
 
       return tx.product.findUniqueOrThrow({ where: { id }, include: PRODUCT_INCLUDE });
     });
+
+    if (actorUserId && Object.keys(changes).length > 0) {
+      await auditService
+        .log(actorUserId, "update", "Product", id, changes)
+        .catch((err) => console.error("Failed to write audit log:", err));
+    }
+
+    return result;
   },
 
   /** Soft delete — products stay attached to historical sales/stock records. */
-  async deactivate(id: string) {
+  async deactivate(id: string, actorUserId?: string) {
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) {
       throw new ProductError("Product not found.");
     }
-    return prisma.product.update({ where: { id }, data: { isActive: false } });
+    const result = await prisma.product.update({ where: { id }, data: { isActive: false } });
+    if (actorUserId) {
+      await auditService
+        .log(actorUserId, "deactivate", "Product", id, { name: product.name, sku: product.sku })
+        .catch((err) => console.error("Failed to write audit log:", err));
+    }
+    return result;
   },
 
-  async reactivate(id: string) {
-    return prisma.product.update({ where: { id }, data: { isActive: true } });
+  async reactivate(id: string, actorUserId?: string) {
+    const result = await prisma.product.update({ where: { id }, data: { isActive: true } });
+    if (actorUserId) {
+      await auditService
+        .log(actorUserId, "reactivate", "Product", id, {})
+        .catch((err) => console.error("Failed to write audit log:", err));
+    }
+    return result;
   },
 };

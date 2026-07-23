@@ -25,6 +25,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             <Link href={`/products/${id}/combo`} className="text-blue-400 hover:text-blue-300">
               Manage Bundle Components
             </Link>
+            <Link href={`/products/${id}/audit-log`} className="text-blue-400 hover:text-blue-300">
+              Audit Log
+            </Link>
           </div>
         </header>
         <ProductForm productId={id} />

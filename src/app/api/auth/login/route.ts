@@ -7,7 +7,7 @@ import { SESSION_COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/session";
 const loginSchema = z.object({
   email: z.preprocess(
     (val) => (typeof val === "string" ? val.trim() : val),
-    z.string().email("Enter a valid email address.")
+    z.email("Enter a valid email address.")
   ),
   password: z.string().min(1, "Password is required."),
 });
