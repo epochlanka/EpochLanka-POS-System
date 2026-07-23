@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSessionExpiry } from "@/lib/session";
@@ -206,4 +204,3 @@ export const authService = {
     return true;
   },
 };
->>>>>>> Stashed changes

@@ -14,24 +14,6 @@ model User {
   email        String   @unique
   passwordHash String
   roleId       String
-<<<<<<< Updated upstream
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-}
-
-model Product {
-  id          String     @id @default(cuid())
-  name        String
-  sku         String     @unique
-  barcode     String?    @unique
-  costPrice   Decimal
-  sellPrice   Decimal
-  taxRate     Float      @default(0)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-}
-
-=======
   branchId     String?
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -250,7 +232,6 @@ model Warehouse {
   stocks   Stock[]
 }
 
->>>>>>> Stashed changes
 model Stock {
   id          String     @id @default(cuid())
   productId   String
