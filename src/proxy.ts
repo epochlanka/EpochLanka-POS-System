@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/session";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/pos", "/products", "/categories"];
+const PROTECTED_PREFIXES = ["/dashboard", "/pos", "/products", "/categories", "/attributes"];
 
 /**
  * This proxy only does a cheap, cookie-presence check. It runs on the
@@ -33,5 +33,12 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/pos/:path*", "/products/:path*", "/categories/:path*", "/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/pos/:path*",
+    "/products/:path*",
+    "/categories/:path*",
+    "/attributes/:path*",
+    "/login",
+  ],
 };
