@@ -38,6 +38,7 @@ interface ProductFormValues {
   costPrice: string;
   sellPrice: string;
   taxRate: string;
+  reorderLevel: string;
   imageUrl: string;
   stockByWarehouse: Record<string, string>;
 }
@@ -53,6 +54,7 @@ const EMPTY_FORM: ProductFormValues = {
   costPrice: "",
   sellPrice: "",
   taxRate: "0",
+  reorderLevel: "0",
   imageUrl: "",
   stockByWarehouse: {},
 };
@@ -136,6 +138,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
           costPrice: String(p.costPrice ?? ""),
           sellPrice: String(p.sellPrice ?? ""),
           taxRate: String(p.taxRate ?? "0"),
+          reorderLevel: String(p.reorderLevel ?? "0"),
           imageUrl: p.imageUrl ?? "",
           stockByWarehouse,
         });
@@ -182,6 +185,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
       costPrice: Number(form.costPrice),
       sellPrice: Number(form.sellPrice),
       taxRate: form.taxRate === "" ? 0 : Number(form.taxRate),
+      reorderLevel: form.reorderLevel === "" ? 0 : Number(form.reorderLevel),
       imageUrl: form.imageUrl.trim() || null,
       stocks,
     };
@@ -367,6 +371,28 @@ export default function ProductForm({ productId }: { productId?: string }) {
               value={form.taxRate}
               onChange={(e) => updateField("taxRate", e.target.value)}
             />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-white">Inventory Settings</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClass}>Reorder Level</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              className={inputClass}
+              placeholder="0 = not tracked"
+              value={form.reorderLevel}
+              onChange={(e) => updateField("reorderLevel", e.target.value)}
+            />
+            <p className="text-xs text-zinc-500 mt-1">
+              Flags this product on the Dashboard's Low Stock Watchlist once total stock across
+              all branches falls to this level or below. Leave at 0 to skip low-stock tracking.
+            </p>
           </div>
         </div>
       </section>

@@ -41,6 +41,7 @@ model AuditLog {
   action    String
   entity    String
   entityId  String
+  details   Json?
   createdAt DateTime @default(now())
 
   @@index([userId])

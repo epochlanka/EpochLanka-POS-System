@@ -25,6 +25,8 @@ export interface ProductInput {
   costPrice: number;
   sellPrice: number;
   taxRate?: number;
+  /** Reorder / low-stock threshold, summed across warehouses. 0 = not tracked. */
+  reorderLevel?: number;
   imageUrl?: string | null;
   /** Initial (or updated) on-hand quantity per warehouse/branch. */
   stocks?: StockInput[];
@@ -153,6 +155,7 @@ export const productService = {
           costPrice: data.costPrice,
           sellPrice: data.sellPrice,
           taxRate: data.taxRate ?? 0,
+          reorderLevel: data.reorderLevel ?? 0,
           imageUrl: data.imageUrl ?? null,
         },
       });
@@ -216,6 +219,7 @@ export const productService = {
           ...(data.costPrice !== undefined ? { costPrice: data.costPrice } : {}),
           ...(data.sellPrice !== undefined ? { sellPrice: data.sellPrice } : {}),
           ...(data.taxRate !== undefined ? { taxRate: data.taxRate } : {}),
+          ...(data.reorderLevel !== undefined ? { reorderLevel: data.reorderLevel } : {}),
           ...(data.imageUrl !== undefined ? { imageUrl: data.imageUrl } : {}),
         },
       });

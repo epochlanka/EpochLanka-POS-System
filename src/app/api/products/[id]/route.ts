@@ -20,6 +20,7 @@ const updateSchema = z.object({
   costPrice: z.number().min(0).optional(),
   sellPrice: z.number().min(0).optional(),
   taxRate: z.number().min(0).max(100).optional(),
+  reorderLevel: z.number().int().min(0).optional(),
   imageUrl: z.string().trim().nullable().optional(),
   stocks: z.array(stockSchema).optional(),
 });

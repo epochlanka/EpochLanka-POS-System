@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { authService } from "@/services/auth.service";
 import { SESSION_COOKIE_NAME } from "@/lib/session";
 import { AuthProvider } from "@/lib/auth-context";
+import { Sidebar } from "./_components/Sidebar";
 
 export default async function DashboardGroupLayout({
   children,
@@ -31,7 +32,10 @@ export default async function DashboardGroupLayout({
         permissions,
       }}
     >
-      {children}
+      <div className="flex min-h-screen bg-zinc-950">
+        <Sidebar />
+        <main className="flex-1 min-w-0">{children}</main>
+      </div>
     </AuthProvider>
   );
 }

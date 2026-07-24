@@ -20,6 +20,10 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
+    title: "Point of Sale",
+    items: [{ label: "POS Terminal", href: "/pos", icon: "terminal" }],
+  },
+  {
     title: "Dashboard",
     items: [
       { label: "Overview", href: "/dashboard", icon: "grid" },
@@ -94,6 +98,14 @@ function NavIcon({ name }: { name: string }) {
         <svg {...common}>
           <path d="M20 12 12.5 19.5a2 2 0 0 1-2.8 0L4 13.8V4h9.8l6.2 6.2a2 2 0 0 1 0 2.8Z" />
           <circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    case "terminal":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="m7 9 3 3-3 3" />
+          <path d="M13 15h4" />
         </svg>
       );
     default:

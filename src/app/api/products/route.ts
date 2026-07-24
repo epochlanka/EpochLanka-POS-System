@@ -20,6 +20,7 @@ const productSchema = z.object({
   costPrice: z.number().min(0, "Cost price can't be negative."),
   sellPrice: z.number().min(0, "Sell price can't be negative."),
   taxRate: z.number().min(0).max(100).optional(),
+  reorderLevel: z.number().int().min(0).optional(),
   imageUrl: z.string().trim().nullable().optional(),
   stocks: z.array(stockSchema).optional(),
 });
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const product = await productService.create(parsed.data, auth.user.id);
     return NextResponse.json({ product: serializeDecimals(product) }, { status: 201 });
   } catch (err) {
-    if (err instanceof ProductError) {
+    if (err instanceof ProductError) {  
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
     console.error("Failed to create product:", err);
